@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta charset="utf-8">
+    <title>Land use</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.4.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.4.0/mapbox-gl.js"></script>
+    <style>
+        html {
+            font-size: 100%;
+        }
+        body { 
+            margin: 0; 
+            padding: 0; 
+            font-family: sans-serif; 
+            font-size: 0.75rem;
+        }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+        #panel {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: #fff;
+            width: 400px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            border-radius: 4px;
+            box-shadow: 0 0 4px 0 rgba(0, 0, 0, 0.1);
+            color: rgba(0, 0, 0, 0.5);
+        }
+        #panel h4 {
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            margin: 0;
+            padding: 16px;
+        }
+        #panel ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 16px;
+        }
+        #panel li {
+            padding: 4px 0;
+        }
+        #panel span {
+            width: 10px;
+            height: 10px;
+            display: inline-block;
+            margin-right: 8px;
+            border-radius: 50%;
+        }
+        .mapboxgl-popup-content {
+            font-size: 0.75rem;
+            color: rgba(0, 0, 0, 0.5);
+            min-width: 250px;
+            max-width: 400px;
+            box-shadow: 0 0 4px 0 rgba(0, 0, 0, 0.1);
+        }
+        .mapboxgl-popup-content dl {
+            margin-bottom: 0;
+        }
+        .mapboxgl-popup-content dd {
+            margin-left: 0;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <div id="panel">
+      <h4>Land Use</h4>
+      <ul>
+        <li><span style="background: #F9EDDB"></span>One & Two Family Buildings</li>
+        <li><span style="background: #F6D9CB"></span>Multi-Family Walk-Up Buildings</li>
+        <li><span style="background: #F6D9CB"></span>Multi-Family Elevator Buildings</li>
+        <li><span style="background: #F1B89C"></span>Mixed Residential & Commercial Buildings</li>
+        <li><span style="background: #DF7649"></span>Commercial & Office Buildings</li>
+        <li><span style="background: #CF4F4F"></span>Industrial & Manufacturing</li>
+        <li><span style="background: #BEC6CC"></span>Transportation & Utility</li>
+        <li><span style="background: #BDE7F4"></span>Public Facilities & Institutions</li>
+        <li><span style="background: #A3D393"></span>Open Space & Outdoor Recreation</li>
+        <li><span style="background: #8DA2B4"></span>Parking Facilities</li>
+        <li><span style="background: #E4E4E4"></span>Vacant Land</li>
+        <li><span style="background: #F9F9F9; border: 1px solid #ccc; box-sizing: border-box;"></span>No Data</li>
+      </ul>
+    </div>
+    <script>
+        const landUseNames = {
+            '01': 'One & Two Family Buildings',
+            '02': 'Multi-Family Walk-Up Buildings',
+            '03': 'Multi-Family Elevator Buildings',
+            '04': 'Mixed Residential & Commercial Buildings',
+            '05': 'Commercial & Office Buildings',
+            '06': 'Industrial & Manufacturing',
+            '07': 'Transportation & Utility',
+            '08': 'Public Facilities & Institutions',
+            '09': 'Open Space & Outdoor Recreation',
+            '10': 'Parking Facilities',
+            '11': 'Vacant Land',
+        }
+      mapboxgl.accessToken = 'pk.eyJ1Ijoibm5lbGUiLCJhIjoiY2tzZDg2a2dlMG56bzJucXFpNGJydG92YiJ9.5wS9rdhqffiwF7EPfb6GgQ';
+      const map = new mapboxgl.Map({
+        container: 'map', // container ID
+        style: 'mapbox://styles/nnele/cksd9bqkj6mtv17qu23txju73', // style URL
+        center: [-73.985317, 40.723032], // starting position [lng, lat]
+        zoom: 13, // starting zoom
+        minZoom: 13,
+        maxZoom: 18,
+        hash: true
+      });
+      const nav = new mapboxgl.NavigationControl();
+      map.addControl(nav, 'top-left');
+
+      map.on('mousemove', function(e) {
+        if (map.loaded()) {
+          const features = map.queryRenderedFeatures(e.point, { 
+            layers: ['lots'] 
+          });
+          map.getCanvas().style.cursor = features.length ? 'pointer' : '';
+        }
+      });
+      
+      map.on('click', function(e) {
+        const geometry = e.point;
+        const parameters = {
+            layers: ['lots']
+        }
+        const features = map.queryRenderedFeatures(geometry, parameters);
+        const lot = features[0];
+
+        if (features.length) {
+            const bbl = lot.properties.BBL || '—';
+            const landUse = landUseNames[lot.properties.LandUse] || '—';
+            const zoneDist = lot.properties.ZoneDist1 || '—';
+            const bldgClass = lot.properties.BldgClass || '—';
+            const ownerName = lot.properties.OwnerName || '—';
+
+            const popup = new mapboxgl.Popup()
+                .setLngLat(e.lngLat)
+                .setHTML(`<dl>
+                    <dt>BBL</dt>
+                    <dd>${bbl}</dd>
+                    <dt>Land Use</dt>
+                    <dd>${landUse}</dd>
+                    <dt>Zoning District</dt>
+                    <dd>${zoneDist}</dd>
+                    <dt>Building Class</dt>
+                    <dd>${bldgClass}</dd>
+                    <dt>Owner Name</dt>
+                    <dd>${ownerName}</dd>
+                </dl>`)
+                .addTo(map);
+        }
+      });
+    </script>
+
+  </body>
+</html>
